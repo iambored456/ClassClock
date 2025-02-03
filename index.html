@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Classroom Digital Clock</title>
+  <style>
+    /* General page styles */
+    body {
+      margin: 0;
+      padding-top: 20px; /* Add some top padding */
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start; /* Align items to the top */
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    /* Date style - larger to fill more of the screen */
+    #date {
+      font-size: 5em;
+      margin-bottom: 10px;
+    }
+    /* Time style - very large blue text */
+    #time {
+      font-size: 18em;
+      color: #00aaff;
+      margin: 0;
+    }
+    /* Bottom container for period info and progress bar */
+    #period-container {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+    }
+    /* Label for current period */
+    #period-label {
+      margin-right: 32px;
+      white-space: nowrap;
+      font-size: 8em;
+    }
+    /* Progress bar container */
+    #progress-bar {
+      flex-grow: 1;
+      height: 180px;
+      background-color: #333;
+      border-radius: 10px;
+      overflow: visible;
+      position: relative;
+    }
+    /* The blue progress fill */
+    #progress {
+      height: 100%;
+      background-color: #00aaff;
+      width: 0%;
+      transition: width 1s linear;
+      border-radius: 10px;
+    }
+    /* The "time left" text that slides along the progress bar */
+    #time-left {
+      position: absolute;
+      top: -70px;
+      transform: translateX(-50%);
+      font-size: 4em;
+      white-space: nowrap;
+      z-index: 2;
+    }
+  </style>
+</head>
+<body>
+  <div id="date"></div>
+  <div id="time"></div>
+  
+  <div id="period-container">
+    <div id="period-label"></div>
+    <div id="progress-bar">
+      <div id="progress"></div>
+      <div id="time-left"></div>
+    </div>
+  </div>
+
+  <script>
+    // Define the schedule periods with start and end times in 24-hour format.
+    // Times are given in HH:MM, and we will construct Date objects for today's date.
+    const schedule = [
+      {
+        label: "Before",
+        // For "Before", we treat the period as from midnight to 8:50 AM.
+        start: "00:00",
+        end: "08:50"
+      },
+      {
+        label: "Period 1",
+        start: "08:50",
+        end: "10:05"
+      },
+      {
+        label: "Break",
+        start: "10:05",
+        end: "10:15"
+      },
+      {
+        label: "Period 2",
+        start: "10:15",
+        end: "11:30"
+      },
+      {
+        label: "Lunch",
+        start: "11:30",
+        end: "12:20"
+      },
+      {
+        label: "Period 3",
+        start: "12:20",
+        end: "13:35"
+      },
+      {
+        label: "Break",
+        start: "13:35",
+        end: "13:45"
+      },
+      {
+        label: "Period 4",
+        start: "13:45",
+        end: "15:00"
+      },
+      {
+        label: "After",
+        // For "After", we treat it as from 3:00 PM to midnight.
+        start: "15:00",
+        end: "23:59"
+      }
+    ];
+
+    // Helper function to create a Date object for today's date at a specific time (HH:MM)
+    function getTodayTime(timeStr) {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      const now = new Date();
+      now.setHours(hours, minutes, 0, 0);
+      return now;
+    }
+
+    // Get the current period based on the current time.
+    // Returns an object with label, start (Date), and end (Date)
+    function getCurrentPeriod(now) {
+      for (let i = 0; i < schedule.length; i++) {
+        const period = schedule[i];
+        const startTime = getTodayTime(period.start);
+        const endTime = getTodayTime(period.end);
+        // For the "After" period, adjust the end time to be the very end of the day.
+        if (period.label === "After") {
+          endTime.setHours(23, 59, 59, 999);
+        }
+        if (now >= startTime && now <= endTime) {
+          return {
+            label: period.label,
+            start: startTime,
+            end: endTime
+          };
+        }
+      }
+      // If not found (should not happen), return null.
+      return null;
+    }
+
+    // Format time in HH:MM AM/PM format
+    function formatTime(date) {
+      let hours = date.getHours();
+      let minutes = date.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // the hour '0' should be '12'
+      minutes = minutes < 10 ? '0' + minutes : minutes;
+      return hours + ":" + minutes + " " + ampm;
+    }
+
+    // Format date as Day of Week, Month, Day of Month (e.g., "Tuesday, March 10")
+    function formatDate(date) {
+      const options = { weekday: 'long', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString(undefined, options);
+    }
+
+    // Update the clock, date, period label, progress bar, and time left text.
+    function updateClock() {
+      const now = new Date();
+      // Update time display
+      document.getElementById('time').textContent = formatTime(now);
+      // Update date display
+      document.getElementById('date').textContent = formatDate(now);
+
+      // Update period and progress bar if applicable
+      const periodInfo = getCurrentPeriod(now);
+      if (periodInfo) {
+        document.getElementById('period-label').textContent = periodInfo.label;
+        const periodDuration = periodInfo.end - periodInfo.start;
+        const timeElapsed = now - periodInfo.start;
+        // Ensure progress percentage is between 0 and 100.
+        let progressPercent = Math.min(Math.max((timeElapsed / periodDuration) * 100, 0), 100);
+        document.getElementById('progress').style.width = progressPercent + '%';
+
+        // Update the time left text's position along the progress bar
+        document.getElementById('time-left').style.left = progressPercent + '%';
+
+        // Calculate and display time left in the current period
+        const timeLeftMs = periodInfo.end - now;
+        const timeLeftSec = Math.max(0, Math.floor(timeLeftMs / 1000));
+        const minutes = Math.floor(timeLeftSec / 60);
+        const seconds = timeLeftSec % 60;
+        const timeLeftStr = minutes + ":" + (seconds < 10 ? "0" + seconds : seconds);
+        document.getElementById('time-left').textContent = timeLeftStr;
+      } else {
+        // In case no period is found (should not happen), clear the label, progress, and time left text
+        document.getElementById('period-label').textContent = "";
+        document.getElementById('progress').style.width = '0%';
+        document.getElementById('time-left').style.left = '0%';
+        document.getElementById('time-left').textContent = "";
+      }
+    }
+
+    // Update every second
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
