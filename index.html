@@ -81,7 +81,7 @@
         font-size: 4em;
       }
       #time {
-        font-size: 28em;
+        font-size: 14em;
       }
       #period-label {
         font-size: 6em;
@@ -91,7 +91,7 @@
         height: 120px;
       }
       #time-left {
-        font-size: 8em;
+        font-size: 3em;
         top: -50px;
       }
     }
@@ -228,18 +228,30 @@
         let progressPercent = Math.min(Math.max((timeElapsed / periodDuration) * 100, 0), 100);
         document.getElementById('progress').style.width = progressPercent + '%';
 
-        // Update the time left text's position along the progress bar
-        document.getElementById('time-left').style.left = progressPercent + '%';
+        // Update the "Time Left" text's position along the progress bar.
+        // Calculate the desired left offset in pixels.
+        var progressBarElement = document.getElementById('progress-bar');
+        var timeLeftElement = document.getElementById('time-left');
+        var progressBarWidth = progressBarElement.offsetWidth;
+        var desiredLeft = (progressPercent / 100) * progressBarWidth;
 
-        // Calculate and display time left in the current period
+        // Check if the text would overflow the right edge.
+        // The text is centered (translateX(-50%)), so its right half is timeLeftElement.offsetWidth/2.
+        var timeLeftWidth = timeLeftElement.offsetWidth;
+        if (desiredLeft + (timeLeftWidth / 2) > progressBarWidth) {
+          desiredLeft = progressBarWidth - (timeLeftWidth / 2);
+        }
+        timeLeftElement.style.left = desiredLeft + 'px';
+
+        // Calculate and display time left in the current period.
         const timeLeftMs = periodInfo.end - now;
         const timeLeftSec = Math.max(0, Math.floor(timeLeftMs / 1000));
         const minutes = Math.floor(timeLeftSec / 60);
         const seconds = timeLeftSec % 60;
         const timeLeftStr = minutes + ":" + (seconds < 10 ? "0" + seconds : seconds);
-        document.getElementById('time-left').textContent = timeLeftStr;
+        timeLeftElement.textContent = timeLeftStr;
       } else {
-        // In case no period is found (should not happen), clear the label, progress, and time left text
+        // In case no period is found (should not happen), clear the label, progress, and time left text.
         document.getElementById('period-label').textContent = "";
         document.getElementById('progress').style.width = '0%';
         document.getElementById('time-left').style.left = '0%';
