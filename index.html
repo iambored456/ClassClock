@@ -2,100 +2,199 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Classroom Digital Clock</title>
+  <title>Classroom Digital Clock – Editable Schedule & Preferences</title>
   <style>
-    /* General page styles */
-    body {
-      margin: 0;
-      padding-top: 20px; /* Add some top padding */
-      background-color: black;
-      color: white;<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Classroom Digital Clock</title>
-  <style>
-    /* Reset some defaults and set up a responsive container */
+    /* ====== Clock & Layout Styles ====== */
     html, body {
       margin: 0;
       padding: 0;
       height: 100vh;
-      background-color: black;
-      color: white;
+      background-color: #000;
+      color: #fff;
       font-family: Arial, sans-serif;
+      overflow: hidden;
+      transition: background-color 0.3s, color 0.3s, font-family 0.3s;
     }
     body {
       display: flex;
       flex-direction: column;
-      justify-content: space-between; /* space out the top and bottom sections */
+      justify-content: space-between;
       align-items: center;
-      overflow: hidden;
     }
-
-    /* Date display at the top */
     #date {
-      font-size: clamp(2rem, 8vw, 8em); /* responsive font-size */
+      font-size: 64px;
       margin-top: 1rem;
     }
-
-    /* Main time display */
     #time {
-      font-size: clamp(3rem, 46vw, 46em); /* scales based on viewport width */
-      color: #00aaff;
+      font-size: 200px;
       margin: 0;
       line-height: 1;
     }
-
-    /* Container at the bottom for period info and progress bar */
+    /* Container for period info & progress bar */
     #period-container {
       width: 100%;
       padding: 1rem;
       display: flex;
       align-items: center;
     }
-
-    /* Period label styling */
     #period-label {
-      font-size: clamp(1rem, 6vw, 6em);
+      font-size: 48px;
       margin-right: 1rem;
       white-space: nowrap;
     }
-
-    /* Progress bar container */
     #progress-bar {
       flex-grow: 1;
-      height: clamp(50px, 15vw, 180px);
+      height: 120px;
       background-color: #333;
       border-radius: 10px;
       position: relative;
-      overflow: hidden;
+      overflow: visible; /* so that the time-left text can extend outside */
     }
-
-    /* Progress fill */
     #progress {
       height: 100%;
-      background-color: #00aaff;
       width: 0%;
+      background-color: #00aaff;
       transition: width 1s linear;
       border-radius: 10px;
     }
-
-    /* Time left label that moves along the progress bar */
+    /* Time remaining text is now positioned closer atop the bar */
     #time-left {
       position: absolute;
-      top: -2.5em;
+      top: -1em;
       left: 0;
       transform: translateX(-50%);
-      font-size: clamp(0.5rem, 4vw, 4em);
+      font-size: 40px;
       white-space: nowrap;
       z-index: 2;
+    }
+
+    /* ====== Settings Menu & Toggle ====== */
+    #menu-toggle {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 2em;
+      cursor: pointer;
+      z-index: 200;
+    }
+    #settings-menu {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 600px; /* wider default to fit all rows/columns */
+      height: 100%;
+      background: #222;
+      color: #eee;
+      padding: 20px;
+      padding-bottom: 100px; /* extra dead space at bottom */
+      box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      z-index: 150;
+    }
+    #settings-menu.open {
+      transform: translateX(0);
+    }
+    /* Draggable resizer on the left edge of the settings menu */
+    #menu-resizer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 10px;
+      height: 100%;
+      cursor: ew-resize;
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* ====== Schedule Table Editor ====== */
+    #schedule-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+    #schedule-table th, 
+    #schedule-table td {
+      border: 1px solid #444;
+      padding: 5px;
+      text-align: left;
+      font-size: 0.9em;
+    }
+    .drag-handle {
+      cursor: move;
+    }
+    /* Highlight a row when selected */
+    tr.selected {
+      background-color: #555;
+    }
+
+    /* ====== Preferences Styles ====== */
+    .preferences-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+      margin-top: 1em;
+    }
+    .pref-row {
+      display: flex;
+      gap: 1em;
+    }
+    .pref-item {
+      flex: 1;
+      position: relative;
+    }
+    .pref-item.full {
+      flex: none;
+      width: 100%;
+    }
+    .pref-row label {
+      display: block;
+      font-size: 0.9em;
+    }
+    .pref-row input[type="number"],
+    .pref-row select {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 0.25em;
+    }
+    /* Limit the clickable area for colour inputs to just the swatch. */
+    input[type="color"] {
+      width: 40px;
+      height: 30px;
+      padding: 0;
+      border: none;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+    /* Style for the copy buttons */
+    .copy-btn {
+      font-size: 0.8em;
+      margin-left: 5px;
+      padding: 2px 5px;
+      cursor: pointer;
+    }
+    /* Button styling in settings */
+    #settings-menu button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    /* Footer message style */
+    #footer-message {
+      text-align: center;
+      margin-top: 1em;
+      font-size: 0.9em;
+      color: #ccc;
     }
   </style>
 </head>
 <body>
+  <!-- Main Clock Display -->
   <div id="date"></div>
   <div id="time"></div>
-  
   <div id="period-container">
     <div id="period-label"></div>
     <div id="progress-bar">
@@ -104,9 +203,162 @@
     </div>
   </div>
 
+  <!-- Menu Toggle Button (a chevron) -->
+  <button id="menu-toggle" title="Settings">&#9660;</button>
+
+  <!-- Settings Menu Panel -->
+  <div id="settings-menu">
+    <div id="menu-resizer"></div>
+    <h2>Settings</h2>
+    
+    <!-- Schedule Editor -->
+    <h3>Schedule</h3>
+    <table id="schedule-table">
+      <thead>
+        <tr>
+          <th>Drag</th>
+          <th>Label</th>
+          <th>Start</th>
+          <th>End</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Schedule rows inserted dynamically -->
+      </tbody>
+    </table>
+    <button id="delete-schedule-row">Delete Row</button>
+    <button id="add-schedule-row">Add Row</button>
+    
+    <!-- Preferences -->
+    <h3>Preferences</h3>
+    <div class="preferences-container">
+      <!-- Font Selection (full width) -->
+      <div class="pref-row">
+        <div class="pref-item full">
+          <label>
+            Font:
+            <select id="pref-font">
+              <option value="Arial">Arial</option>
+              <option value="Helvetica">Helvetica</option>
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Courier New">Courier New</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Tahoma">Tahoma</option>
+              <option value="Trebuchet MS">Trebuchet MS</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Palatino">Palatino</option>
+              <option value="Garamond">Garamond</option>
+              <option value="Comic Sans MS">Comic Sans MS</option>
+              <option value="Impact">Impact</option>
+              <option value="Lucida Console">Lucida Console</option>
+              <option value="Digital-7">Digital-7</option>
+              <option value="OCR A Std">OCR A Std</option>
+              <option value="Monaco">Monaco</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <!-- Date Colour & Date Font Size -->
+      <div class="pref-row">
+        <div class="pref-item">
+          <label>
+            Date Colour:
+            <input type="color" id="pref-date-color" value="#ffffff">
+            <button id="copy-date-colour" class="copy-btn" title="Copy this colour to all">Copy to All</button>
+          </label>
+        </div>
+        <div class="pref-item">
+          <label>
+            Date Font Size (px):
+            <input type="number" id="pref-date-font" value="64">
+          </label>
+        </div>
+      </div>
+      <!-- Time Colour & Time Font Size -->
+      <div class="pref-row">
+        <div class="pref-item">
+          <label>
+            Time Colour:
+            <input type="color" id="pref-time-color" value="#00aaff">
+            <button id="copy-time-colour" class="copy-btn" title="Copy this colour to all">Copy to All</button>
+          </label>
+        </div>
+        <div class="pref-item">
+          <label>
+            Time Font Size (px):
+            <input type="number" id="pref-time-font" value="200">
+          </label>
+        </div>
+      </div>
+      <!-- Label Colour & Label Font Size -->
+      <div class="pref-row">
+        <div class="pref-item">
+          <label>
+            Label Colour:
+            <input type="color" id="pref-label-color" value="#ffffff">
+            <button id="copy-label-colour" class="copy-btn" title="Copy this colour to all">Copy to All</button>
+          </label>
+        </div>
+        <div class="pref-item">
+          <label>
+            Label Font Size (px):
+            <input type="number" id="pref-schedule-label-font" value="48">
+          </label>
+        </div>
+      </div>
+      <!-- Progress Bar Colour & Height -->
+      <div class="pref-row">
+        <div class="pref-item">
+          <label>
+            Progress Bar Colour:
+            <input type="color" id="pref-bar-color" value="#00aaff">
+            <button id="copy-bar-colour" class="copy-btn" title="Copy this colour to all">Copy to All</button>
+          </label>
+        </div>
+        <div class="pref-item">
+          <label>
+            Progress Bar Height (px):
+            <input type="number" id="pref-progress-height" value="120">
+          </label>
+        </div>
+      </div>
+      <!-- Time Left Colour & Time Left Font Size -->
+      <div class="pref-row">
+        <div class="pref-item">
+          <label>
+            Time Left Colour:
+            <input type="color" id="pref-timeleft-color" value="#ffffff">
+            <button id="copy-timeleft-colour" class="copy-btn" title="Copy this colour to all">Copy to All</button>
+          </label>
+        </div>
+        <div class="pref-item">
+          <label>
+            Time Left Font Size (px):
+            <input type="number" id="pref-time-left-font" value="40">
+          </label>
+        </div>
+      </div>
+      <!-- Background Colour (full width) -->
+      <div class="pref-row">
+        <div class="pref-item full">
+          <label>
+            Background Colour:
+            <input type="color" id="pref-bg-color" value="#000000">
+          </label>
+        </div>
+      </div>
+    </div>
+    <button id="reset-preferences">Reset Preferences</button>
+    <!-- Footer message -->
+    <div id="footer-message">Hope you enjoy my ClassClock app! - Quinn Fleming</div>
+  </div>
+
   <script>
-    // Define the schedule periods (using 24-hour format)
-    const schedule = [
+    /**********************************
+     * Clock & Schedule Functionality
+     **********************************/
+    // Default schedule – will be overridden by saved settings if available.
+    let schedule = [
       { label: "Before", start: "00:00", end: "08:50" },
       { label: "Period 1", start: "08:50", end: "10:05" },
       { label: "Break", start: "10:05", end: "10:15" },
@@ -118,7 +370,25 @@
       { label: "After", start: "15:00", end: "23:59" }
     ];
 
-    // Helper: create a Date for today's date at a given HH:MM
+    // Default preferences.
+    const defaultPreferences = {
+      fontFamily: "Arial",
+      dateFontSize: 64,
+      timeFontSize: 200,
+      scheduleLabelFontSize: 48,
+      timeLeftFontSize: 40,
+      progressBarHeight: 120,
+      backgroundColor: "#000000",
+      // Individual colours:
+      dateColor: "#ffffff",
+      timeColor: "#00aaff",
+      labelColor: "#ffffff",
+      barColor: "#00aaff",
+      timeLeftColor: "#ffffff"
+    };
+    let preferences = Object.assign({}, defaultPreferences);
+
+    // Helper: Create a Date for today's date at a given HH:MM.
     function getTodayTime(timeStr) {
       const [hours, minutes] = timeStr.split(":").map(Number);
       const now = new Date();
@@ -126,12 +396,11 @@
       return now;
     }
 
-    // Determine the current period based on the current time
+    // Determine the current period (or return null).
     function getCurrentPeriod(now) {
       for (let period of schedule) {
         const startTime = getTodayTime(period.start);
         const endTime = getTodayTime(period.end);
-        // For "After", extend the end time to the very end of the day
         if (period.label === "After") {
           endTime.setHours(23, 59, 59, 999);
         }
@@ -142,320 +411,369 @@
       return null;
     }
 
-    // Format a Date into HH:MM AM/PM
     function formatTime(date) {
       let hours = date.getHours();
       const minutes = date.getMinutes();
       const ampm = hours >= 12 ? 'PM' : 'AM';
       hours = hours % 12 || 12;
-      return hours + ":" + (minutes < 10 ? '0' + minutes : minutes) + " " + ampm;
+      return hours + ":" + (minutes < 10 ? "0" + minutes : minutes) + " " + ampm;
     }
 
-    // Format a Date into a full date string (e.g., "Tuesday, March 10")
     function formatDate(date) {
       const options = { weekday: 'long', month: 'long', day: 'numeric' };
       return date.toLocaleDateString(undefined, options);
     }
 
-    // Update clock, date, period info, progress bar, and time left text
     function updateClock() {
       const now = new Date();
-      document.getElementById('time').textContent = formatTime(now);
-      document.getElementById('date').textContent = formatDate(now);
+      document.getElementById("time").textContent = formatTime(now);
+      document.getElementById("date").textContent = formatDate(now);
 
       const periodInfo = getCurrentPeriod(now);
       if (periodInfo) {
-        document.getElementById('period-label').textContent = periodInfo.label;
+        document.getElementById("period-label").textContent = periodInfo.label;
         const periodDuration = periodInfo.end - periodInfo.start;
         const timeElapsed = now - periodInfo.start;
         let progressPercent = Math.min(Math.max((timeElapsed / periodDuration) * 100, 0), 100);
-        document.getElementById('progress').style.width = progressPercent + '%';
+        document.getElementById("progress").style.width = progressPercent + "%";
 
-        // Position the time-left element along the progress bar
-        const progressBar = document.getElementById('progress-bar');
-        const timeLeftElem = document.getElementById('time-left');
+        // Position the time-left text along the progress bar.
+        const progressBar = document.getElementById("progress-bar");
+        const timeLeftElem = document.getElementById("time-left");
         const progressBarWidth = progressBar.offsetWidth;
         let desiredLeft = (progressPercent / 100) * progressBarWidth;
-        // Adjust to prevent overflow on the right
         const timeLeftWidth = timeLeftElem.offsetWidth;
         if (desiredLeft + (timeLeftWidth / 2) > progressBarWidth) {
           desiredLeft = progressBarWidth - (timeLeftWidth / 2);
         }
-        timeLeftElem.style.left = desiredLeft + 'px';
+        timeLeftElem.style.left = desiredLeft + "px";
 
-        // Compute and display time left in the current period
+        // Compute and display time left.
         const timeLeftMs = periodInfo.end - now;
         const timeLeftSec = Math.max(0, Math.floor(timeLeftMs / 1000));
         const minutes = Math.floor(timeLeftSec / 60);
         const seconds = timeLeftSec % 60;
         timeLeftElem.textContent = minutes + ":" + (seconds < 10 ? "0" + seconds : seconds);
       } else {
-        // Fallback: clear period info if no period is found
-        document.getElementById('period-label').textContent = "";
-        document.getElementById('progress').style.width = '0%';
-        document.getElementById('time-left').textContent = "";
+        document.getElementById("period-label").textContent = "";
+        document.getElementById("progress").style.width = "0%";
+        document.getElementById("time-left").textContent = "";
       }
     }
-
-    // Start the clock update interval
     updateClock();
     setInterval(updateClock, 1000);
-  </script>
-</body>
-</html>
 
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start; /* Align items to the top */
-      align-items: center;
-      height: 225vh;
-      overflow: hidden;
-    }
-    /* Date style - larger to fill more of the screen */
-    #date {
-      font-size: 8em;
-      margin-bottom: 10px;
-    }
-    /* Time style - very large blue text */
-    #time {
-      font-size: 46em;
-      color: #00aaff;
-      margin: 0;
-    }
-    /* Bottom container for period info and progress bar */
-    #period-container {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-      display: flex;
-      align-items: center;
-    }
-    /* Label for current period */
-    #period-label {
-      margin-right: 32px;
-      white-space: nowrap;
-      font-size: 12em;
-    }
-    /* Progress bar container */
-    #progress-bar {
-      flex-grow: 1;
-      height: 180px;
-      background-color: #333;
-      border-radius: 10px;
-      overflow: visible;
-      position: relative;
-    }
-    /* The blue progress fill */
-    #progress {
-      height: 100%;
-      background-color: #00aaff;
-      width: 0%;
-      transition: width 1s linear;
-      border-radius: 10px;
-    }
-    /* The "time left" text that slides along the progress bar */
-    #time-left {
-      position: absolute;
-      top: -70px;
-      transform: translateX(-50%);
-      font-size: 10em;
-      white-space: nowrap;
-      z-index: 2;
-    }
+    /**********************************
+     * Settings Menu Functionality
+     **********************************/
+    const menuToggle = document.getElementById("menu-toggle");
+    const settingsMenu = document.getElementById("settings-menu");
+    menuToggle.addEventListener("click", () => {
+      settingsMenu.classList.toggle("open");
+      menuToggle.innerHTML = settingsMenu.classList.contains("open") ? "&#9650;" : "&#9660;";
+    });
 
-    /* Media query for a 1280x800 screen resolution */
-    @media screen and (max-width: 1280px) and (max-height: 800px) {
-      body {
-        height: 800px;
+    // Draggable resizer for settings menu.
+    const menuResizer = document.getElementById("menu-resizer");
+    let isResizing = false;
+    menuResizer.addEventListener("mousedown", function(e) {
+      isResizing = true;
+      document.body.style.cursor = "ew-resize";
+    });
+    document.addEventListener("mousemove", function(e) {
+      if (!isResizing) return;
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth >= 300 && newWidth <= 600) {
+        settingsMenu.style.width = newWidth + "px";
       }
-      /* Slightly reduce sizes so everything fits nicely */
-      #date {
-        font-size: 4em;
+    });
+    document.addEventListener("mouseup", function(e) {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = "default";
       }
-      #time {
-        font-size: 14em;
-      }
-      #period-label {
-        font-size: 6em;
-        margin-right: 20px;
-      }
-      #progress-bar {
-        height: 120px;
-      }
-      #time-left {
-        font-size: 4em;
-        top: -50px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div id="date"></div>
-  <div id="time"></div>
-  
-  <div id="period-container">
-    <div id="period-label"></div>
-    <div id="progress-bar">
-      <div id="progress"></div>
-      <div id="time-left"></div>
-    </div>
-  </div>
+    });
 
-  <script>
-    // Define the schedule periods with start and end times in 24-hour format.
-    // Times are given in HH:MM, and we will construct Date objects for today's date.
-    const schedule = [
-      {
-        label: "Before",
-        // For "Before", we treat the period as from midnight to 8:50 AM.
-        start: "00:00",
-        end: "08:50"
-      },
-      {
-        label: "Period 1",
-        start: "08:50",
-        end: "10:05"
-      },
-      {
-        label: "Break",
-        start: "10:05",
-        end: "10:15"
-      },
-      {
-        label: "Period 2",
-        start: "10:15",
-        end: "11:30"
-      },
-      {
-        label: "Lunch",
-        start: "11:30",
-        end: "12:20"
-      },
-      {
-        label: "Period 3",
-        start: "12:20",
-        end: "13:35"
-      },
-      {
-        label: "Break",
-        start: "13:35",
-        end: "13:45"
-      },
-      {
-        label: "Period 4",
-        start: "13:45",
-        end: "15:00"
-      },
-      {
-        label: "After",
-        // For "After", we treat it as from 3:00 PM to midnight.
-        start: "15:00",
-        end: "23:59"
-      }
-    ];
-
-    // Helper function to create a Date object for today's date at a specific time (HH:MM)
-    function getTodayTime(timeStr) {
-      const [hours, minutes] = timeStr.split(":").map(Number);
-      const now = new Date();
-      now.setHours(hours, minutes, 0, 0);
-      return now;
-    }
-
-    // Get the current period based on the current time.
-    // Returns an object with label, start (Date), and end (Date)
-    function getCurrentPeriod(now) {
-      for (let i = 0; i < schedule.length; i++) {
-        const period = schedule[i];
-        const startTime = getTodayTime(period.start);
-        const endTime = getTodayTime(period.end);
-        // For the "After" period, adjust the end time to be the very end of the day.
-        if (period.label === "After") {
-          endTime.setHours(23, 59, 59, 999);
-        }
-        if (now >= startTime && now <= endTime) {
-          return {
-            label: period.label,
-            start: startTime,
-            end: endTime
-          };
+    // --- LocalStorage Helpers ---
+    function loadSettings() {
+      // Load schedule.
+      const savedSchedule = localStorage.getItem("clockSchedule");
+      if (savedSchedule) {
+        try {
+          schedule = JSON.parse(savedSchedule);
+        } catch (e) {
+          console.error("Error parsing saved schedule.", e);
         }
       }
-      // If not found (should not happen), return null.
-      return null;
-    }
-
-    // Format time in HH:MM AM/PM format
-    function formatTime(date) {
-      let hours = date.getHours();
-      let minutes = date.getMinutes();
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12; // the hour '0' should be '12'
-      minutes = minutes < 10 ? '0' + minutes : minutes;
-      return hours + ":" + minutes + " " + ampm;
-    }
-
-    // Format date as Day of Week, Month, Day of Month (e.g., "Tuesday, March 10")
-    function formatDate(date) {
-      const options = { weekday: 'long', month: 'long', day: 'numeric' };
-      return date.toLocaleDateString(undefined, options);
-    }
-
-    // Update the clock, date, period label, progress bar, and time left text.
-    function updateClock() {
-      const now = new Date();
-      // Update time display
-      document.getElementById('time').textContent = formatTime(now);
-      // Update date display
-      document.getElementById('date').textContent = formatDate(now);
-
-      // Update period and progress bar if applicable
-      const periodInfo = getCurrentPeriod(now);
-      if (periodInfo) {
-        document.getElementById('period-label').textContent = periodInfo.label;
-        const periodDuration = periodInfo.end - periodInfo.start;
-        const timeElapsed = now - periodInfo.start;
-        // Ensure progress percentage is between 0 and 100.
-        let progressPercent = Math.min(Math.max((timeElapsed / periodDuration) * 100, 0), 100);
-        document.getElementById('progress').style.width = progressPercent + '%';
-
-        // Update the "Time Left" text's position along the progress bar.
-        // Calculate the desired left offset in pixels.
-        var progressBarElement = document.getElementById('progress-bar');
-        var timeLeftElement = document.getElementById('time-left');
-        var progressBarWidth = progressBarElement.offsetWidth;
-        var desiredLeft = (progressPercent / 100) * progressBarWidth;
-
-        // Check if the text would overflow the right edge.
-        // The text is centered (translateX(-50%)), so its right half is timeLeftElement.offsetWidth/2.
-        var timeLeftWidth = timeLeftElement.offsetWidth;
-        if (desiredLeft + (timeLeftWidth / 2) > progressBarWidth) {
-          desiredLeft = progressBarWidth - (timeLeftWidth / 2);
+      // Load preferences.
+      const savedPrefs = localStorage.getItem("clockPreferences");
+      if (savedPrefs) {
+        try {
+          preferences = JSON.parse(savedPrefs);
+        } catch (e) {
+          console.error("Error parsing saved preferences.", e);
         }
-        timeLeftElement.style.left = desiredLeft + 'px';
+      }
+      applyPreferences();
+    }
 
-        // Calculate and display time left in the current period.
-        const timeLeftMs = periodInfo.end - now;
-        const timeLeftSec = Math.max(0, Math.floor(timeLeftMs / 1000));
-        const minutes = Math.floor(timeLeftSec / 60);
-        const seconds = timeLeftSec % 60;
-        const timeLeftStr = minutes + ":" + (seconds < 10 ? "0" + seconds : seconds);
-        timeLeftElement.textContent = timeLeftStr;
+    function saveSettings() {
+      localStorage.setItem("clockSchedule", JSON.stringify(schedule));
+      localStorage.setItem("clockPreferences", JSON.stringify(preferences));
+    }
+
+    // --- Apply Preferences to Clock Elements ---
+    function applyPreferences() {
+      document.getElementById("date").style.fontSize = preferences.dateFontSize + "px";
+      document.getElementById("time").style.fontSize = preferences.timeFontSize + "px";
+      document.getElementById("period-label").style.fontSize = preferences.scheduleLabelFontSize + "px";
+      document.getElementById("time-left").style.fontSize = preferences.timeLeftFontSize + "px";
+      document.getElementById("progress-bar").style.height = preferences.progressBarHeight + "px";
+      document.body.style.backgroundColor = preferences.backgroundColor;
+      document.body.style.fontFamily = preferences.fontFamily;
+      // Apply individual colours.
+      document.getElementById("date").style.color = preferences.dateColor;
+      document.getElementById("time").style.color = preferences.timeColor;
+      document.getElementById("period-label").style.color = preferences.labelColor;
+      document.getElementById("time-left").style.color = preferences.timeLeftColor;
+      document.getElementById("progress").style.backgroundColor = preferences.barColor;
+    }
+
+    // --- Preference Input Listeners ---
+    function attachPreferenceListeners() {
+      document.getElementById("pref-font").addEventListener("input", function() {
+        preferences.fontFamily = this.value;
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-date-font").addEventListener("input", function() {
+        preferences.dateFontSize = parseInt(this.value, 10);
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-time-font").addEventListener("input", function() {
+        preferences.timeFontSize = parseInt(this.value, 10);
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-schedule-label-font").addEventListener("input", function() {
+        preferences.scheduleLabelFontSize = parseInt(this.value, 10);
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-time-left-font").addEventListener("input", function() {
+        preferences.timeLeftFontSize = parseInt(this.value, 10);
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-progress-height").addEventListener("input", function() {
+        preferences.progressBarHeight = parseInt(this.value, 10);
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-bg-color").addEventListener("input", function() {
+        preferences.backgroundColor = this.value;
+        applyPreferences();
+        saveSettings();
+      });
+      // Individual colour inputs.
+      document.getElementById("pref-date-color").addEventListener("input", function() {
+        preferences.dateColor = this.value;
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-time-color").addEventListener("input", function() {
+        preferences.timeColor = this.value;
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-label-color").addEventListener("input", function() {
+        preferences.labelColor = this.value;
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-bar-color").addEventListener("input", function() {
+        preferences.barColor = this.value;
+        applyPreferences();
+        saveSettings();
+      });
+      document.getElementById("pref-timeleft-color").addEventListener("input", function() {
+        preferences.timeLeftColor = this.value;
+        applyPreferences();
+        saveSettings();
+      });
+    }
+    attachPreferenceListeners();
+
+    // --- Copy-to-All Buttons for Colour Options ---
+    function copyColourFrom(inputId) {
+      const col = document.getElementById(inputId).value;
+      preferences.dateColor = col;
+      preferences.timeColor = col;
+      preferences.labelColor = col;
+      preferences.barColor = col;
+      preferences.timeLeftColor = col;
+      // Update all individual colour inputs.
+      document.getElementById("pref-date-color").value = col;
+      document.getElementById("pref-time-color").value = col;
+      document.getElementById("pref-label-color").value = col;
+      document.getElementById("pref-bar-color").value = col;
+      document.getElementById("pref-timeleft-color").value = col;
+      applyPreferences();
+      saveSettings();
+    }
+    document.getElementById("copy-date-colour").addEventListener("click", function() {
+      copyColourFrom("pref-date-color");
+    });
+    document.getElementById("copy-time-colour").addEventListener("click", function() {
+      copyColourFrom("pref-time-color");
+    });
+    document.getElementById("copy-label-colour").addEventListener("click", function() {
+      copyColourFrom("pref-label-color");
+    });
+    document.getElementById("copy-bar-colour").addEventListener("click", function() {
+      copyColourFrom("pref-bar-color");
+    });
+    document.getElementById("copy-timeleft-colour").addEventListener("click", function() {
+      copyColourFrom("pref-timeleft-color");
+    });
+
+    // Reset preferences to defaults.
+    document.getElementById("reset-preferences").addEventListener("click", function() {
+      preferences = Object.assign({}, defaultPreferences);
+      // Update all preference input values.
+      document.getElementById("pref-font").value = preferences.fontFamily;
+      document.getElementById("pref-date-font").value = preferences.dateFontSize;
+      document.getElementById("pref-time-font").value = preferences.timeFontSize;
+      document.getElementById("pref-schedule-label-font").value = preferences.scheduleLabelFontSize;
+      document.getElementById("pref-time-left-font").value = preferences.timeLeftFontSize;
+      document.getElementById("pref-progress-height").value = preferences.progressBarHeight;
+      document.getElementById("pref-bg-color").value = preferences.backgroundColor;
+      // Update individual colour inputs.
+      document.getElementById("pref-date-color").value = preferences.dateColor;
+      document.getElementById("pref-time-color").value = preferences.timeColor;
+      document.getElementById("pref-label-color").value = preferences.labelColor;
+      document.getElementById("pref-bar-color").value = preferences.barColor;
+      document.getElementById("pref-timeleft-color").value = preferences.timeLeftColor;
+      applyPreferences();
+      saveSettings();
+    });
+
+    /**********************************
+     * Schedule Table Editor
+     **********************************/
+    const scheduleTableBody = document.querySelector("#schedule-table tbody");
+    let selectedRowIndex = null;
+
+    function renderScheduleTable() {
+      scheduleTableBody.innerHTML = "";
+      schedule.forEach((item, index) => {
+        const tr = document.createElement("tr");
+        tr.dataset.index = index;
+        tr.setAttribute("draggable", "true");
+
+        // Drag handle cell.
+        const dragTd = document.createElement("td");
+        dragTd.innerHTML = "&#9776;";
+        dragTd.className = "drag-handle";
+        tr.appendChild(dragTd);
+
+        // Label cell.
+        const labelTd = document.createElement("td");
+        const labelInput = document.createElement("input");
+        labelInput.type = "text";
+        labelInput.value = item.label;
+        labelInput.addEventListener("change", function() {
+          schedule[index].label = this.value;
+          saveSettings();
+        });
+        labelTd.appendChild(labelInput);
+        tr.appendChild(labelTd);
+
+        // Start time cell.
+        const startTd = document.createElement("td");
+        const startInput = document.createElement("input");
+        startInput.type = "time";
+        startInput.value = item.start;
+        startInput.addEventListener("change", function() {
+          schedule[index].start = this.value;
+          saveSettings();
+        });
+        startTd.appendChild(startInput);
+        tr.appendChild(startTd);
+
+        // End time cell.
+        const endTd = document.createElement("td");
+        const endInput = document.createElement("input");
+        endInput.type = "time";
+        endInput.value = item.end;
+        endInput.addEventListener("change", function() {
+          schedule[index].end = this.value;
+          saveSettings();
+        });
+        endTd.appendChild(endInput);
+        tr.appendChild(endTd);
+
+        // Clicking on the row (outside the inputs) highlights it.
+        tr.addEventListener("click", function(e) {
+          if (e.target.tagName.toLowerCase() === "input") return;
+          const prevSelected = scheduleTableBody.querySelector("tr.selected");
+          if (prevSelected) prevSelected.classList.remove("selected");
+          tr.classList.add("selected");
+          selectedRowIndex = index;
+        });
+
+        // Drag-and-drop events.
+        tr.addEventListener("dragstart", dragStart);
+        tr.addEventListener("dragover", dragOver);
+        tr.addEventListener("drop", dragDrop);
+
+        scheduleTableBody.appendChild(tr);
+      });
+    }
+
+    let dragStartIndex;
+    function dragStart(e) {
+      dragStartIndex = +this.dataset.index;
+      e.dataTransfer.effectAllowed = "move";
+    }
+    function dragOver(e) {
+      e.preventDefault();
+    }
+    function dragDrop(e) {
+      const dragEndIndex = +this.dataset.index;
+      const item = schedule.splice(dragStartIndex, 1)[0];
+      schedule.splice(dragEndIndex, 0, item);
+      renderScheduleTable();
+      saveSettings();
+    }
+
+    // "Add Row" inserts a new row immediately after the selected row (or at the end if none selected).
+    document.getElementById("add-schedule-row").addEventListener("click", () => {
+      const newRow = { label: "New Period", start: "00:00", end: "00:00" };
+      if (selectedRowIndex !== null && selectedRowIndex < schedule.length) {
+        schedule.splice(selectedRowIndex + 1, 0, newRow);
       } else {
-        // In case no period is found (should not happen), clear the label, progress, and time left text.
-        document.getElementById('period-label').textContent = "";
-        document.getElementById('progress').style.width = '0%';
-        document.getElementById('time-left').style.left = '0%';
-        document.getElementById('time-left').textContent = "";
+        schedule.push(newRow);
       }
-    }
+      renderScheduleTable();
+      saveSettings();
+    });
 
-    // Update every second
-    updateClock();
-    setInterval(updateClock, 1000);
+    // "Delete Row" deletes the currently selected row.
+    document.getElementById("delete-schedule-row").addEventListener("click", () => {
+      if (selectedRowIndex !== null && selectedRowIndex < schedule.length) {
+        schedule.splice(selectedRowIndex, 1);
+        selectedRowIndex = null;
+        renderScheduleTable();
+        saveSettings();
+      } else {
+        alert("Please select a row to delete.");
+      }
+    });
+
+    loadSettings();
+    renderScheduleTable();
   </script>
 </body>
 </html>
