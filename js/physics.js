@@ -33,9 +33,19 @@ export const Physics = {
             return;
         }
 
-        Physics.engine = Matter.Engine.create({ enableSleeping: true });
+        // --- NEW: Increased Solver Iterations for Rigidity ---
+        const engineOptions = {
+            enableSleeping: true,
+            // Default is 6, higher values increase rigidity but cost performance
+            positionIterations: 8,
+             // Default is 4, higher values help prevent tunnelling/overlap
+            velocityIterations: 6
+        };
+        Physics.engine = Matter.Engine.create(engineOptions);
+        // --- End New ---
+
         Physics.world = Physics.engine.world;
-        Physics.engine.world.gravity.y = 0.7;
+        Physics.engine.world.gravity.y = 0.7; // Keep gravity relatively low
 
         Physics.render = Matter.Render.create({
             element: canvasElement.parentNode,
@@ -70,29 +80,24 @@ export const Physics = {
 
         const numSegments = State.SAND_COLORS.length;
         const segmentWidth = width / numSegments;
-        // Increase thickness again for better collision detection margin
-        const wallThickness = 15;
+        const wallThickness = 15; // Keep thickness reasonable
         const walls = [];
         const wallOptions = {
              isStatic: true,
-             friction: 0.5, // Slightly higher friction for stability
-             restitution: 0.1, // Low bounce
-             render: { visible: false } // Collision walls remain invisible
+             friction: 0.6, // Increased friction slightly for walls
+             restitution: 0.1, // Keep wall bounce low
+             render: { visible: false }
         };
 
-        // Floor: Centered slightly below the canvas bottom edge
+        // Floor
         walls.push(Matter.Bodies.rectangle(width / 2, height + wallThickness / 2, width + wallThickness * 2, wallThickness, wallOptions));
-
-        // Left Outer Wall: Centered slightly left of the canvas left edge
+        // Left Outer Wall
         walls.push(Matter.Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height + wallThickness * 2, wallOptions));
-
-        // Right Outer Wall: Centered slightly right of the canvas right edge
+        // Right Outer Wall
         walls.push(Matter.Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height + wallThickness * 2, wallOptions));
-
-        // Inner Divider Walls: Centered exactly on the segment boundaries
+        // Inner Divider Walls
         for (let i = 1; i < numSegments; i++) {
             const dividerX = i * segmentWidth;
-            // Ensure dividers extend slightly beyond floor/ceiling
              walls.push(Matter.Bodies.rectangle(dividerX, height / 2, wallThickness, height + wallThickness * 2, wallOptions));
         }
         Matter.World.add(Physics.world, walls);
@@ -108,38 +113,42 @@ export const Physics = {
 
         const numSegments = State.SAND_COLORS.length;
         const segmentWidth = Physics.render.options.width / numSegments;
+        // For polygons, 'radius' usually means distance from center to vertex
         const radius = Settings.preferences?.sandParticleSize || 5;
         const wallThickness = 15; // Match createWalls collision thickness
-        const buffer = radius * 0.5; // Use half radius as buffer minimum distance from wall center
+        // Buffer calculation might need slight adjustment based on hexagon orientation,
+        // but using radius should still be a safe approximation.
+        const buffer = radius * 0.5;
 
-        // Calculate segment X boundaries based on *collision* walls
         const segmentStartX = segmentIndex * segmentWidth;
-
-        // Min/Max X within the segment, accounting for wall thickness and particle radius
-        // Ensure particle center is at least radius + buffer away from the wall's *centerline*
         const minX = segmentStartX + (wallThickness / 2) + radius + buffer;
         const maxX = segmentStartX + segmentWidth - (wallThickness / 2) - radius - buffer;
 
-        // If segment is too narrow for particle + buffers, don't spawn
         if (minX >= maxX) {
-             // console.warn(`Segment ${segmentIndex} too narrow (${maxX - minX} available) for particle radius ${radius}.`);
+             // console.warn(`Segment ${segmentIndex} too narrow for particle radius ${radius}.`);
              return;
         }
 
-        const x = minX + (Math.random() * (maxX - minX)); // Random X within the safe spawning area
+        const x = minX + (Math.random() * (maxX - minX));
         const y = -radius * 2; // Start just above the visible area
 
-        const particle = Matter.Bodies.circle(x, y, radius, {
-            restitution: 0.2, // Keep low bounce
-            friction: 0.6,    // Keep higher friction
+        // --- CHANGE: Use polygon instead of circle ---
+        const particle = Matter.Bodies.polygon(x, y, 6, radius, { // 6 sides for hexagon
+            restitution: 0.15, // Slightly reduced bounce from 0.2 maybe? Test this.
+            friction: 0.7,     // Slightly increased friction (hexagons have flat sides, might help locking)
             frictionAir: 0.01,
-            density: 0.01,
+            density: 0.01,     // Keep density relatively low
             render: { fillStyle: color },
-            sleepThreshold: 60,
+            sleepThreshold: 60, // Standard sleep threshold
+            // --- NEW: Chamfering can sometimes help stacking stability ---
+            // chamfer: { radius: radius * 0.1 } // Optional: slightly rounds corners
         });
+        // --- End Change ---
+
 
         Matter.Body.setVelocity(particle, { x: (Math.random() - 0.5) * 0.1, y: Math.random() * 0.1 });
-        Matter.Body.setAngularVelocity(particle, (Math.random() - 0.5) * 0.02);
+        // Reduce initial spin slightly as hexagons might rotate more jarringly
+        Matter.Body.setAngularVelocity(particle, (Math.random() - 0.5) * 0.01);
         Matter.World.add(Physics.world, particle);
     },
 

@@ -8,6 +8,7 @@ import { Physics } from './physics.js';
 
 export const Visuals = {
     update: function(now) {
+        // ... (rest of the update function remains the same)
         if (Settings.preferences.showScheduleCircles) {
             Visuals.renderScheduleCircles();
         } else if (DOM.scheduleCirclesDisplayEl) {
@@ -16,6 +17,7 @@ export const Visuals = {
     },
 
     renderScheduleCircles: function() {
+       // ... (renderScheduleCircles remains the same)
        if (!Settings.preferences.showScheduleCircles || !DOM.scheduleCirclesDisplayEl) {
            if(DOM.scheduleCirclesDisplayEl) DOM.scheduleCirclesDisplayEl.innerHTML = ''; return;
        }
@@ -67,24 +69,37 @@ export const Visuals = {
                 return;
             }
 
-            // --- Revised Capacity & Total Particles Calculation ---
-            const particleRadius = Settings.preferences?.sandParticleSize || 5;
-            const particleArea = Math.PI * particleRadius * particleRadius;
+            // --- Revised Capacity & Total Particles Calculation for HEXAGONS ---
+            const particleRadius = Settings.preferences?.sandParticleSize || 5; // Center-to-vertex distance
+
+            // --- CHANGE: Calculate area of a regular hexagon ---
+            // Area = (3 * sqrt(3) / 2) * side^2. For hexagon, side = radius (center-to-vertex).
+            const particleArea = (3 * Math.sqrt(3) / 2) * particleRadius * particleRadius;
+            // --- End Change ---
+
             const segmentWidth = containerWidth / State.SAND_COLORS.length;
-            // Usable area calculation needs to account for internal wall thickness for accuracy
-            const wallThickness = 10; // Match the physics wall thickness
-            const usableSegmentWidth = segmentWidth - wallThickness; // Approx width between walls
-            const usableSegmentArea = usableSegmentWidth * (containerHeight - particleRadius * 2); // Area above floor level
-            const packingDensity = 1; // **Adjust this factor (0.6 - 0.9) to tune 'fullness'**
+            const wallThickness = 15; // Match physics wall thickness for calculation
+            const usableSegmentWidth = Math.max(0, segmentWidth - wallThickness); // Ensure non-negative
+            // Estimate usable height slightly more conservatively
+            const usableSegmentHeight = Math.max(0, containerHeight - particleRadius); // Only need buffer at bottom
+            const usableSegmentArea = usableSegmentWidth * usableSegmentHeight;
+
+            // --- CHANGE: Adjust packing density for hexagons ---
+            // Hexagons pack denser than circles. Theoretical max is ~0.907.
+            // Random packing is less, simulation packing even less precise.
+            // Start with a value like 0.8 or 0.85, adjust based on visual results.
+            const packingDensity = 0.85; // Adjusted from 1.1 (was too high even for circles)
+            // --- End Change ---
+
             // Calculate based on area, ensure a minimum sensible number
-            State.visualMaxParticlesPerSegment = Math.max(15, Math.floor((usableSegmentArea * packingDensity) / particleArea));
+            State.visualMaxParticlesPerSegment = Math.max(10, Math.floor((usableSegmentArea * packingDensity) / particleArea));
             State.totalParticlesForPeriod = State.visualMaxParticlesPerSegment * State.SAND_COLORS.length;
-            console.log(`Est. Max Particles Per Segment: ${State.visualMaxParticlesPerSegment}, Total Target: ${State.totalParticlesForPeriod}`);
+            console.log(`Est. Max Particles Per Segment (Hex): ${State.visualMaxParticlesPerSegment}, Total Target: ${State.totalParticlesForPeriod}, Particle Area: ${particleArea.toFixed(2)}`);
             // --- End Calculation ---
 
             Physics.init(DOM.sandBarsCanvas, containerWidth, containerHeight);
             Physics.start();
-            Visuals.handleColorSchemeChange();
+            Visuals.handleColorSchemeChange(); // Apply colors after init
 
             const currentPeriod = Clock.getCurrentPeriodInfo(getCurrentOffsetTime());
             if (currentPeriod) {
@@ -95,8 +110,14 @@ export const Visuals = {
                 if (periodDurationMs > 0) {
                     Visuals.checkAndAddParticles(); // Initial catch-up run
                     State.physicsCheckIntervalId = setInterval(Visuals.checkAndAddParticles, State.physicsCheckIntervalMs);
-                } else { Physics.stop(); }
-            } else { Physics.stop(); }
+                } else {
+                    console.log("Period duration is zero or negative, stopping physics.");
+                    Physics.stop();
+                }
+            } else {
+                console.log("No current period found, stopping physics.");
+                Physics.stop();
+            }
         });
     },
 
@@ -106,53 +127,75 @@ export const Visuals = {
         }
         const now = getCurrentOffsetTime();
         const periodInfo = Clock.getCurrentPeriodInfo(now);
-        if (!periodInfo) { Visuals.stopPhysicsCheckInterval(); return; }
+        if (!periodInfo) {
+            // console.log("Period ended, stopping particle addition.");
+            Visuals.stopPhysicsCheckInterval(); return;
+         }
 
         const periodStartMs = periodInfo.start.getTime();
         const periodEndMs = periodInfo.end.getTime();
         const periodDurationMs = periodEndMs - periodStartMs;
-        if (periodDurationMs <= 0) { Visuals.stopPhysicsCheckInterval(); return; }
+        if (periodDurationMs <= 0) { Visuals.stopPhysicsCheckInterval(); return; } // Should not happen if started correctly
 
         const timeElapsedMs = Math.max(0, now.getTime() - periodStartMs);
         const totalFillPercentage = Math.min(1, timeElapsedMs / periodDurationMs);
         const targetTotalParticles = Math.floor(totalFillPercentage * State.totalParticlesForPeriod);
 
+        // Determine how many particles to add *this interval* to catch up
+        const particlesToAdd = targetTotalParticles - State.physicsParticlesAdded;
+
         // Add particles one by one if needed, up to the target
-        if (targetTotalParticles > State.physicsParticlesAdded) {
+        // Limit additions per interval to prevent potential frame drops if catching up a lot
+        const maxToAddThisTick = 5; // Adjust as needed for performance
+        for (let i = 0; i < Math.min(particlesToAdd, maxToAddThisTick); ++i) {
+             if (State.physicsParticlesAdded >= State.totalParticlesForPeriod) break; // Ensure we don't exceed total
+
              const segmentDuration = periodDurationMs / State.SAND_COLORS.length;
              const nextParticleIndex = State.physicsParticlesAdded;
              // Estimate time this specific particle represents
              const particleRepresentsTime = (nextParticleIndex + 0.5) / State.totalParticlesForPeriod * periodDurationMs;
-             const segmentIndex = Math.min(Math.floor(particleRepresentsTime / segmentDuration), State.SAND_COLORS.length - 1);
+             // Determine segment based on the *estimated time* the particle represents
+             const segmentIndex = Math.min(State.SAND_COLORS.length - 1, Math.floor(particleRepresentsTime / segmentDuration));
+
 
             if (segmentIndex >= 0) {
                 Physics.addParticle(segmentIndex, State.SAND_COLORS[segmentIndex]);
                 State.physicsParticlesAdded++;
             }
         }
+
+         // Stop adding if the period is complete visually
+         if (State.physicsParticlesAdded >= State.totalParticlesForPeriod) {
+            // console.log("Target particle count reached.");
+            Visuals.stopPhysicsCheckInterval();
+         }
     },
 
     stopPhysicsCheckInterval: function() {
         if (State.physicsCheckIntervalId) {
             clearInterval(State.physicsCheckIntervalId);
             State.physicsCheckIntervalId = null;
+            // console.log("Physics check interval stopped.");
         }
     },
 
     handlePeriodChange: function(periodInfo) {
+        console.log("Handling period change for physics sand bars.");
         Visuals.setupPhysicsSandBars(periodInfo);
     },
 
     handleDisplayToggle: function() {
+        console.log("Handling display toggle for physics sand bars.");
         const periodInfo = Clock.getCurrentPeriodInfo(getCurrentOffsetTime());
-        Visuals.setupPhysicsSandBars(periodInfo);
+        Visuals.setupPhysicsSandBars(periodInfo); // Re-setup based on current state
     },
 
     handleColorSchemeChange: function() {
          if (DOM.sandBarsContainerEl) {
              const newColor = Settings.getActiveColourScheme().text || '#FFFFFF';
-             const outlineDivs = DOM.sandBarsContainerEl.querySelectorAll('.sand-bar-outline-segment');
-             outlineDivs.forEach(div => { div.style.borderColor = newColor; });
+             // If you add visual outlines independent of physics, update them here
+             // const outlineDivs = DOM.sandBarsContainerEl.querySelectorAll('.sand-bar-outline-segment');
+             // outlineDivs.forEach(div => { div.style.borderColor = newColor; });
          }
          if(Settings.preferences.showScheduleCircles) {
               Visuals.renderScheduleCircles();

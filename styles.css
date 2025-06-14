@@ -181,7 +181,7 @@ tr.drag-over { border-top: 2px dashed #00aaff; }
 .pref-item.full { flex: none; width: 100%; }
 .pref-item.checkbox-item { flex-direction: row; align-items: center; height: 35px; }
 .pref-item.checkbox-item label { margin-bottom: 0; }
-.pref-item.checkbox-item input[type="checkbox"] { margin-right: 8px; width: 18px; height: 18px; cursor: pointer; accent-color: #00aaff; }
+.pref-item.checkbox-item input[type="checkbox"] { margina-right: 8px; width: 18px; height: 18px; cursor: pointer; accent-color: #00aaff; }
 .pref-row label { display: block; font-size: 0.95em; margin-bottom: 5px; color: #ddd; }
 .number-input-wrapper { display: flex; align-items: center; margin-top: auto; }
 .number-input-wrapper input[type=number]::-webkit-outer-spin-button, .number-input-wrapper input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
