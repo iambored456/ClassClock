@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Digital Clock – Editable Schedule & Preferences</title>
+  <script type="module" crossorigin src="/assets/index-BYMfT69C.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CdU-H8a1.css">
+</head>
+<body>
+  <!-- Main Clock Display Container -->
+  <div id="clock-display-area">
+      <div id="date" class="display-element"></div>
+      <div id="schedule-circles-display" class="display-element"></div>
+      <div id="time" class="display-element"></div>
+      <div id="period-container" class="display-element">
+        <div id="period-label"></div>
+        <div id="progress-bar" class="display-element">
+          <div id="progress"></div>
+          <div id="time-left"></div>
+        </div>
+          <!-- Sand Bars Container -->
+          <div id="sand-bars-container" class="display-element">
+            <!-- Outline Divs (behind canvas) - RE-ADDED -->
+            <div class="sand-bar-outline-segment"></div>
+            <div class="sand-bar-outline-segment"></div>
+            <div class="sand-bar-outline-segment"></div>
+            <div class="sand-bar-outline-segment"></div>
+            <div class="sand-bar-outline-segment"></div>
+            <!-- Canvas for Matter.js (on top) -->
+            <canvas id="sand-bars-canvas"></canvas>
+          </div>
+      </div>
+  </div>
+
+  <!-- Menu Toggle Button -->
+  <button id="menu-toggle" title="Settings">▼</button>
+
+  <!-- Settings Pullout Menu Panel -->
+  <div id="settings-menu">
+    <div id="menu-resizer"></div>
+    <nav id="settings-nav">
+      <div class="nav-container">
+        <div class="brand">
+          <h1>Quinn Fleming's Learning Tools</h1>
+          <p class="small-text">Configure your clock settings</p>
+        </div>
+      </div>
+    </nav>
+    <div id="tabs">
+      <button class="tab-button active" data-tab="appearance-tab">Appearance</button>
+      <button class="tab-button" data-tab="schedule-alerts-tab">Schedule & Alerts</button>
+    </div>
+    <div id="tab-contents">
+
+      <!-- Appearance Tab Content -->
+      <div id="appearance-tab" class="tab-content active">
+        <h3>Appearance Settings</h3>
+
+        <!-- Display Elements Section -->
+        <div class="settings-section">
+            <h4>Display Elements</h4>
+            <p>Choose which clock components are visible. Layout adjusts automatically.</p>
+            <div id="display-elements-checklist" class="preferences-container">
+                 <div class="pref-row">
+                    <div class="pref-item checkbox-item"><label><input type="checkbox" id="pref-show-date" data-pref="showDate"> Show Date</label></div>
+                    <div class="pref-item checkbox-item"><label><input type="checkbox" id="pref-show-time" data-pref="showTime"> Show Time</label></div>
+                 </div>
+                 <div class="pref-row">
+                    <div class="pref-item checkbox-item"><label><input type="checkbox" id="pref-show-schedule-label" data-pref="showScheduleLabel"> Show Schedule Label</label></div>
+                    <div class="pref-item checkbox-item"><label><input type="checkbox" id="pref-show-progress-bar" data-pref="showProgressBar"> Show Progress Bar</label></div>
+                 </div>
+                 <div class="pref-row">
+                     <div class="pref-item checkbox-item"><label><input type="checkbox" id="pref-show-schedule-circles" data-pref="showScheduleCircles"> Show Schedule Circles</label></div>
+                     <div class="pref-item checkbox-item"><label><input type="checkbox" id="pref-show-sand-bars" data-pref="showSandBars"> Show Sand Bars (Physics)</label></div>
+                 </div>
+            </div>
+        </div>
+
+        <!-- Sand Bar Specific Settings (Initially Hidden) -->
+        <div id="sand-bar-options" class="settings-section display-element element-hidden">
+             <h4>Sand Bar Settings</h4>
+             <div class="preferences-container">
+                 <div class="pref-row">
+                      <div class="pref-item">
+                          <label for="pref-sand-width">Bar Width (%):</label>
+                          <div class="number-input-wrapper">
+                              <button class="num-btn minus" aria-label="Decrease Sand Bar Width">-</button>
+                              <input type="number" id="pref-sand-width" data-pref="sandWidth" min="10" max="100" step="1" value="80">
+                              <button class="num-btn plus" aria-label="Increase Sand Bar Width">+</button>
+                          </div>
+                      </div>
+                      <div class="pref-item">
+                          <label for="pref-sand-height">Bar Height (px):</label>
+                          <div class="number-input-wrapper">
+                              <button class="num-btn minus" aria-label="Decrease Sand Bar Height">-</button>
+                              <input type="number" id="pref-sand-height" data-pref="sandHeight" min="50" max="800" step="5" value="150">
+                              <button class="num-btn plus" aria-label="Increase Sand Bar Height">+</button>
+                          </div>
+                      </div>
+                 </div>
+                 <div class="pref-row">
+                      <!-- Drop Interval Removed -->
+                      <div class="pref-item">
+                          <label for="pref-sand-particle-size">Particle Size (radius px):</label>
+                          <div class="number-input-wrapper">
+                             <button class="num-btn minus" aria-label="Decrease Particle Size">-</button>
+                              <input type="number" id="pref-sand-particle-size" data-pref="sandParticleSize" min="1" max="20" step="1" value="5">
+                              <button class="num-btn plus" aria-label="Increase Particle Size">+</button>
+                          </div>
+                      </div>
+                       <div class="pref-item"> <!-- Placeholder --> </div>
+                 </div>
+             </div>
+              <button id="reset-sandbar-defaults">Reset Sand Bar Defaults</button>
+        </div>
+
+
+        <!-- General Font/Size Section -->
+        <div class="settings-section">
+            <h4>Font & Size</h4>
+            <div class="preferences-container">
+              <!-- Font Selection -->
+              <div class="pref-row">
+                <div class="pref-item full">
+                  <label for="pref-font">Global Font:</label>
+                    <select id="pref-font">
+                      <option value="Atkinson Hyperlegible">Atkinson Hyperlegible</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Helvetica">Helvetica</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                      <option value="Courier New">Courier New</option>
+                      <option value="Verdana">Verdana</option>
+                      <option value="Tahoma">Tahoma</option>
+                      <option value="Trebuchet MS">Trebuchet MS</option>
+                      <option value="Georgia">Georgia</option>
+                      <option value="Palatino">Palatino</option>
+                      <option value="Garamond">Garamond</option>
+                      <option value="Comic Sans MS">Comic Sans MS</option>
+                      <option value="Impact">Impact</option>
+                      <option value="Lucida Console">Lucida Console</option>
+                      <option value="Digital-7">Digital-7</option>
+                      <option value="OCR A Std">OCR A Std</option>
+                      <option value="Monaco">Monaco</option>
+                    </select>
+                </div>
+              </div>
+              <!-- Sizes with Custom Buttons -->
+              <div class="pref-row">
+                <div class="pref-item">
+                  <label for="pref-date-font">Date Font Size (px):</label>
+                  <div class="number-input-wrapper">
+                     <button class="num-btn minus" aria-label="Decrease Date Font Size">-</button>
+                     <input type="number" id="pref-date-font" data-pref="dateFontSize" value="64" min="10">
+                     <button class="num-btn plus" aria-label="Increase Date Font Size">+</button>
+                   </div>
+                </div>
+                <div class="pref-item">
+                  <label for="pref-time-font">Time Font Size (px):</label>
+                   <div class="number-input-wrapper">
+                     <button class="num-btn minus" aria-label="Decrease Time Font Size">-</button>
+                     <input type="number" id="pref-time-font" data-pref="timeFontSize" value="200" min="20">
+                     <button class="num-btn plus" aria-label="Increase Time Font Size">+</button>
+                   </div>
+                </div>
+              </div>
+               <div class="pref-row">
+                <div class="pref-item">
+                  <label for="pref-schedule-label-font">Label Font Size (px):</label>
+                  <div class="number-input-wrapper">
+                     <button class="num-btn minus" aria-label="Decrease Label Font Size">-</button>
+                     <input type="number" id="pref-schedule-label-font" data-pref="scheduleLabelFontSize" value="48" min="10">
+                     <button class="num-btn plus" aria-label="Increase Label Font Size">+</button>
+                   </div>
+                </div>
+                 <div class="pref-item">
+                  <label for="pref-time-left-font">Time Left Font Size (px):</label>
+                  <div class="number-input-wrapper">
+                     <button class="num-btn minus" aria-label="Decrease Time Left Font Size">-</button>
+                     <input type="number" id="pref-time-left-font" data-pref="timeLeftFontSize" value="40" min="10">
+                     <button class="num-btn plus" aria-label="Increase Time Left Font Size">+</button>
+                   </div>
+                </div>
+              </div>
+              <div class="pref-row">
+                <div class="pref-item">
+                   <label for="pref-progress-height">Progress Bar Height (px):</label>
+                   <div class="number-input-wrapper">
+                     <button class="num-btn minus" aria-label="Decrease Progress Bar Height">-</button>
+                     <input type="number" id="pref-progress-height" data-pref="progressBarHeight" value="120" min="10">
+                     <button class="num-btn plus" aria-label="Increase Progress Bar Height">+</button>
+                   </div>
+                </div>
+                 <div class="pref-item">
+                   <!-- Placeholder -->
+                 </div>
+              </div>
+            </div>
+            <button id="reset-appearance-defaults">Reset Font/Size Defaults</button>
+        </div>
+
+        <!-- Colour Schemes Section -->
+        <div id="colour-scheme-settings" class="settings-section">
+          <h4>Colour Schemes</h4>
+          <p>Define colour palettes. Assign schemes to periods in the 'Schedule & Alerts' tab. The active period's scheme colours the clock.</p>
+          <div id="colour-scheme-tabs"></div>
+          <div id="colour-scheme-content"></div>
+           <button id="reset-schemes-defaults">Reset Schemes to Defaults</button>
+        </div>
+      </div>
+
+      <!-- Schedule & Alerts Tab Content -->
+      <div id="schedule-alerts-tab" class="tab-content">
+        <h3>Schedule & Alerts Configuration</h3>
+        <div class="settings-section">
+            <h4>Class Schedule</h4>
+            <p>Define time blocks. Click swatch to cycle scheme. Click 🟢/🔴 to edit visual alert. Check box for Schedule Circles.</p>
+            <table id="schedule-table">
+              <thead>
+                <tr>
+                  <th>Drag</th><th>Label</th><th>Start</th><th>End</th><th>Scheme</th><th>Alert On?</th><th>Schedule Circles?</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <button id="delete-schedule-row">Delete Selected Row</button>
+            <button id="add-schedule-row">Add Row Below Selected</button>
+         </div>
+        <div id="time-sync-section" class="settings-section">
+          <h4>Time Synchronization</h4>
+          <p>Adjust the clock display to match the school's official time.</p>
+          <button id="sync-to-bell">Sync to Nearest Bell Time</button>
+          <div class="manual-sync-controls">
+            <label>Manual Offset:</label>
+            <div class="offset-buttons">
+                <button id="offset-min-down" title="Decrease Minute Offset">-</button><span>Min</span><button id="offset-min-up" title="Increase Minute Offset">+</button>
+            </div>
+            <div class="offset-buttons">
+                <button id="offset-sec-down" title="Decrease Second Offset">-</button><span>Sec</span><button id="offset-sec-up" title="Increase Second Offset">+</button>
+            </div>
+            <button id="reset-offset" title="Reset offset to zero">Reset Offset</button>
+          </div>
+          <div class="offset-display">Current Offset: <span id="current-offset">0s</span></div>
+           <p class="small-text">Offset is saved automatically.</p>
+        </div>
+      </div> <!-- End #schedule-alerts-tab -->
+    </div> <!-- End #tab-contents -->
+  </div> <!-- End #settings-menu -->
+
+  <!-- Alert Settings Modal -->
+  <div id="alert-modal" class="modal">
+      <div class="modal-content">
+          <span class="close-modal-btn">×</span>
+          <h3 id="modal-title">Visual Alert Settings for Period</h3>
+          <div id="modal-body"></div>
+      </div>
+  </div>
+
+  <!-- Load main script as module - Vite injects dependencies -->
+</body>
+</html>
